@@ -34,18 +34,29 @@ def stock_health(
     threshold: int = DEFAULT_LOW_STOCK_THRESHOLD,
 ) -> str:
     daily = sold_last_week // 7 if sold_last_week else 0
+
+    # 1. Товара вообще нет
     if count <= 0:
         return "out_of_stock"
+
+    # 2. Критический дефицит (меньше базового порога)
     if count < threshold:
         if incoming > 0:
             return "incoming_low"
         return "low"
+
+    # 3. Умеренный запас (меньше тройного порога)
     if count < threshold * 3:
         if daily == 0:
             return "unknown_demand"
         if count < daily * 3:
             return "reorder_soon"
         return "ok"
+
+    # 4. Большой запас, но продажи идут быстрее, чем на 3 дня
     if count < daily * 3:
         return "reorder_soon"
+
+    # 5. Всё в порядке
     return "ok"
+
