@@ -59,4 +59,3 @@ def stock_health(
 
     # 5. Всё в порядке
     return "ok"
-
