@@ -30,8 +30,6 @@ def stock_health(count: int, incoming: int, sold_last_week: int, threshold: int 
     elif count < threshold:
         if incoming > 0:
             return "incoming_low"
-        else:
-            return "low"
     elif count < threshold * 3:
         if daily == 0:
             return "unknown_demand"
