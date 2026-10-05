@@ -17,6 +17,40 @@ TIER_DISCOUNTS = ((10, 5), (25, 10), (50, 15))
 REQUIRED_LINE_KEYS = ("sku", "qty", "unit_price_kopecks")
 
 
+def _validate_line(line: dict[str, str], seen_skus: set[str]) -> str | None:
+    """Вспомогательная функция для проверки одной строки заказа (снижает сложность C901)."""
+    # Проверка обязательных ключей
+    for key in REQUIRED_LINE_KEYS:
+        if key not in line:
+            return f"Missing required key: {key}"
+
+    # Валидация SKU
+    sku = line["sku"]
+    if not sku:
+        return "SKU cannot be empty"
+    if sku in seen_skus:
+        return f"Duplicate SKU found: {sku}"
+    seen_skus.add(sku)
+
+    # Валидация QTY
+    try:
+        qty = int(line["qty"])
+    except ValueError:
+        return "Quantity must be an integer"
+    if qty <= 0:
+        return "Quantity must be greater than zero"
+
+    # Валидация цены
+    try:
+        price = int(line["unit_price_kopecks"])
+    except ValueError:
+        return "Price must be an integer"
+    if price < 0:
+        return "Price cannot be negative"
+
+    return None
+
+
 def validate_order(
     lines: list[dict[str, str]],
     promo_code: str = "",
@@ -26,37 +60,12 @@ def validate_order(
     if not lines:
         return "Order cannot be empty"
 
-    seen_skus = set()
+    seen_skus: set[str] = set()
 
     for line in lines:
-        # Проверка обязательных ключей
-        for key in REQUIRED_LINE_KEYS:
-            if key not in line:
-                return f"Missing required key: {key}"
-
-        # Валидация SKU
-        sku = line["sku"]
-        if not sku:
-            return "SKU cannot be empty"
-        if sku in seen_skus:
-            return f"Duplicate SKU found: {sku}"
-        seen_skus.add(sku)
-
-        # Валидация QTY
-        try:
-            qty = int(line["qty"])
-        except ValueError:
-            return "Quantity must be an integer"
-        if qty <= 0:
-            return "Quantity must be greater than zero"
-
-        # Валидация цены
-        try:
-            price = int(line["unit_price_kopecks"])
-        except ValueError:
-            return "Price must be an integer"
-        if price < 0:
-            return "Price cannot be negative"
+        error = _validate_line(line, seen_skus)
+        if error is not None:
+            return error
 
     # Валидация промокода
     if promo_code and promo_code not in PROMO_CODES:
