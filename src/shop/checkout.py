@@ -17,6 +17,30 @@ TIER_DISCOUNTS = ((10, 5), (25, 10), (50, 15))
 REQUIRED_LINE_KEYS = ("sku", "qty", "unit_price_kopecks")
 
 
+def _validate_qty(raw_qty: str) -> str | None:
+    """Валидация количества одной строки заказа (выделена ради сложности C901)."""
+    try:
+        qty = int(raw_qty)
+    except ValueError:
+        return "Quantity must be an integer"
+    if qty <= 0:
+        return "Quantity must be greater than zero"
+    if qty > 1_000_000:
+        return "Quantity is too large"
+    return None
+
+
+def _validate_price(raw_price: str) -> str | None:
+    """Валидация цены одной строки заказа (выделена ради сложности C901)."""
+    try:
+        price = int(raw_price)
+    except ValueError:
+        return "Price must be an integer"
+    if price < 0:
+        return "Price cannot be negative"
+    return None
+
+
 def _validate_line(line: dict[str, str], seen_skus: set[str]) -> str | None:
     """Вспомогательная функция для проверки одной строки заказа (снижает сложность C901)."""
     # Проверка обязательных ключей
@@ -32,21 +56,13 @@ def _validate_line(line: dict[str, str], seen_skus: set[str]) -> str | None:
         return f"Duplicate SKU found: {sku}"
     seen_skus.add(sku)
 
-    # Валидация QTY
-    try:
-        qty = int(line["qty"])
-    except ValueError:
-        return "Quantity must be an integer"
-    if qty <= 0:
-        return "Quantity must be greater than zero"
+    qty_error = _validate_qty(line["qty"])
+    if qty_error is not None:
+        return qty_error
 
-    # Валидация цены
-    try:
-        price = int(line["unit_price_kopecks"])
-    except ValueError:
-        return "Price must be an integer"
-    if price < 0:
-        return "Price cannot be negative"
+    price_error = _validate_price(line["unit_price_kopecks"])
+    if price_error is not None:
+        return price_error
 
     return None
 
