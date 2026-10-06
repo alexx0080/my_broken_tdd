@@ -145,3 +145,12 @@ def test_vat_is_charged_on_the_discounted_sum() -> None:
         calculate_order_total([line(qty="1", unit_price_kopecks="500000")], shipping_city="msk")
         == 600_000
     )
+
+
+def test_validate_order_fails_on_huge_quantity() -> None:
+    # Передаем нереальное количество товара
+    lines = [{"sku": "item1", "qty": "999999999", "unit_price_kopecks": "10"}]
+    result = validate_order(lines=lines)
+
+    assert isinstance(result, str)
+    assert "too large" in result.lower()
